@@ -11,6 +11,10 @@ from app.errors import AppError
 
 logger = logging.getLogger(__name__)
 
+RESOURCE_CHANGED_MESSAGE = (
+    "El recurso original ha cambiado, vuelva a intentarlo en otro momento."
+)
+
 
 class JwtValidator:
     """Validates RS256 JWT access tokens using a cached JWKS document."""
@@ -139,7 +143,7 @@ class JwtValidator:
             key_data = self._find_key(jwks, kid)
 
         if key_data is None:
-            raise AppError(401, "Unauthorized", "JWT signing key not found.")
+            raise AppError(409, "Conflict", RESOURCE_CHANGED_MESSAGE)
 
         try:
             return PyJWK.from_dict(key_data).key
@@ -161,8 +165,8 @@ class JwtValidator:
         except (httpx.HTTPError, ValueError) as exc:
             logger.error("Failed to fetch JWKS from Identity Service: %s", exc)
             raise AppError(
-                401,
-                "Unauthorized",
+                503,
+                "ServiceUnavailable",
                 "JWT validation is temporarily unavailable.",
             ) from exc
 
