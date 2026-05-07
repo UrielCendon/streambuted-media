@@ -23,6 +23,7 @@ from app.storage.minio_client import StoredAssetMetadata, StoredObjectStream, bu
 
 PNG_BYTES = b"\x89PNG\r\n\x1a\n" + b"\x00" * 8
 MP3_BYTES = b"ID3" + b"\x00" * 16
+FLAC_BYTES = b"fLaC" + b"\x00" * 16
 
 
 class FakeUploadFile:
@@ -191,6 +192,32 @@ def test_accepts_allowed_audio_content_type() -> None:
 
     assert validated.content_type == "audio/mpeg"
     assert validated.size_bytes == len(MP3_BYTES)
+
+
+def test_accepts_flac_audio_content_type() -> None:
+    upload = FakeUploadFile(FLAC_BYTES, "audio/flac", "song.flac")
+
+    validated = run_async(validate_audio_upload(upload, max_size_bytes=1024))
+
+    assert validated.content_type == "audio/flac"
+    assert validated.size_bytes == len(FLAC_BYTES)
+
+
+def test_media_cors_preflight_allows_frontend_origin() -> None:
+    client = build_client(UserRole.ARTIST)
+
+    response = client.options(
+        "/api/v1/media/audio",
+        headers={
+            "Origin": "http://localhost:5173",
+            "Access-Control-Request-Method": "POST",
+            "Access-Control-Request-Headers": "authorization,content-type",
+        },
+    )
+
+    assert response.status_code == 200
+    assert response.headers["access-control-allow-origin"] == "http://localhost:5173"
+    assert response.headers["access-control-allow-credentials"] == "true"
 
 
 def test_accepts_allowed_image_content_type() -> None:

@@ -4,6 +4,7 @@ from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
 from fastapi.exceptions import RequestValidationError
+from fastapi.middleware.cors import CORSMiddleware
 
 from app.auth.jwt_validator import JwtValidator
 from app.config import Settings, get_settings
@@ -59,6 +60,13 @@ def create_app(
         title="StreamButed Media Service",
         version="1.0.0",
         lifespan=lifespan,
+    )
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=app_settings.allowed_cors_origins,
+        allow_credentials=True,
+        allow_methods=["GET", "POST", "OPTIONS"],
+        allow_headers=["Authorization", "Content-Type", "X-Requested-With"],
     )
     app.state.media_service = MediaService(
         settings=app_settings,

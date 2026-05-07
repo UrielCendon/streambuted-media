@@ -31,8 +31,9 @@ MINIO_SECRET_KEY=replace_with_your_minio_secret
 MINIO_BUCKET=streambuted-media
 MINIO_SECURE=false
 
-MEDIA_MAX_AUDIO_SIZE_MB=50
+MEDIA_MAX_AUDIO_SIZE_MB=200
 MEDIA_MAX_IMAGE_SIZE_MB=5
+CORS_ALLOWED_ORIGINS=http://localhost:5173,http://localhost
 
 JWT_ISSUER=http://identity-service:8081
 JWT_JWKS_URL=http://identity-service:8081/api/v1/auth/.well-known/jwks.json
@@ -77,7 +78,8 @@ does not pass through the API Gateway. Media authorizes metadata by
 3. Media Service validates content type, size, and magic bytes.
 4. Media Service generates a UUID v4 asset id.
 5. Media Service stores the file in MinIO at `assets/{assetId}`.
-6. Media Service stores metadata as MinIO object metadata.
+6. Media Service stores metadata as MinIO object metadata and stores
+   `Content-Type` as the object content-type header.
 7. Media Service publishes `media.asset.ready` as best-effort.
 
 ## Stored Metadata
@@ -88,9 +90,25 @@ The following metadata is stored with the MinIO object:
 - `asset-type`
 - `owner-user-id`
 - `original-filename`
-- `content-type`
 - `size-bytes`
 - `uploaded-at`
+
+`contentType` returned by HTTP/gRPC is read from the MinIO object
+`Content-Type` header. It is intentionally not duplicated as custom metadata
+`content-type`, because that can conflict with S3 signing in MinIO uploads.
+
+## Upload Limits And Formats
+
+```text
+Audio max size: 200 MB
+Image max size: 5 MB
+Accepted audio: MP3, WAV, FLAC, OGG, WEBM
+Accepted images: JPEG, PNG, WEBP
+```
+
+The FastAPI app enables CORS for explicit origins from `CORS_ALLOWED_ORIGINS`
+and accepts preflight `OPTIONS` for authenticated upload routes used by the
+browser frontend.
 
 ## Endpoints
 

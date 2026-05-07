@@ -9,6 +9,8 @@ ALLOWED_AUDIO_CONTENT_TYPES = {
     "audio/mpeg",
     "audio/wav",
     "audio/x-wav",
+    "audio/flac",
+    "audio/x-flac",
     "audio/ogg",
     "audio/webm",
 }
@@ -214,6 +216,8 @@ def has_valid_magic_bytes(content: bytes, content_type: str) -> bool:
         )
     if content_type in {"audio/wav", "audio/x-wav"}:
         return len(content) >= 12 and content[:4] == b"RIFF" and content[8:12] == b"WAVE"
+    if content_type in {"audio/flac", "audio/x-flac"}:
+        return content.startswith(b"fLaC")
     if content_type == "audio/ogg":
         return content.startswith(b"OggS")
     if content_type == "audio/webm":

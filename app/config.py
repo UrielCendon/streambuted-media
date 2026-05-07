@@ -20,8 +20,12 @@ class Settings(BaseSettings):
     minio_bucket: str = Field(default="streambuted-media", alias="MINIO_BUCKET")
     minio_secure: bool = Field(default=False, alias="MINIO_SECURE")
 
-    media_max_audio_size_mb: int = Field(default=50, alias="MEDIA_MAX_AUDIO_SIZE_MB")
+    media_max_audio_size_mb: int = Field(default=200, alias="MEDIA_MAX_AUDIO_SIZE_MB")
     media_max_image_size_mb: int = Field(default=5, alias="MEDIA_MAX_IMAGE_SIZE_MB")
+    cors_allowed_origins: str = Field(
+        default="http://localhost:5173,http://localhost",
+        alias="CORS_ALLOWED_ORIGINS",
+    )
 
     jwt_issuer: str = Field(
         default="http://identity-service:8081",
@@ -68,6 +72,18 @@ class Settings(BaseSettings):
     def max_image_size_bytes(self) -> int:
         """Configured maximum image upload size in bytes."""
         return self.media_max_image_size_mb * 1024 * 1024
+
+    @property
+    def allowed_cors_origins(self) -> list[str]:
+        """Configured explicit browser origins allowed to call Media Service."""
+        origins = [
+            origin.strip()
+            for origin in self.cors_allowed_origins.split(",")
+            if origin.strip()
+        ]
+        if not origins or "*" in origins:
+            raise ValueError("CORS_ALLOWED_ORIGINS must define explicit origins and cannot include '*'.")
+        return origins
 
 
 @lru_cache

@@ -115,7 +115,6 @@ class MinioStorage:
             "asset-type": metadata.asset_type.value,
             "owner-user-id": metadata.owner_user_id,
             "original-filename": metadata.original_filename,
-            "content-type": metadata.content_type,
             "size-bytes": str(metadata.size_bytes),
             "uploaded-at": metadata.uploaded_at,
         }
