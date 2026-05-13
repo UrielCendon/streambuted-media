@@ -23,6 +23,7 @@ from app.storage.minio_client import StoredAssetMetadata, StoredObjectStream, bu
 
 PNG_BYTES = b"\x89PNG\r\n\x1a\n" + b"\x00" * 8
 MP3_BYTES = b"ID3" + b"\x00" * 16
+MP4_AUDIO_BYTES = b"\x00\x00\x00\x18ftypdash" + b"\x00" * 16
 FLAC_BYTES = b"fLaC" + b"\x00" * 16
 
 
@@ -179,6 +180,7 @@ def seed_asset(
             owner_user_id=owner_user_id,
             content_type="audio/mpeg",
             size_bytes=len(MP3_BYTES),
+            duration_seconds=123.45,
             original_filename="song.mp3",
             uploaded_at="2026-04-30T00:00:00Z",
         ),
@@ -192,6 +194,15 @@ def test_accepts_allowed_audio_content_type() -> None:
 
     assert validated.content_type == "audio/mpeg"
     assert validated.size_bytes == len(MP3_BYTES)
+
+
+def test_accepts_mp4_audio_container_with_mp3_mime_type() -> None:
+    upload = FakeUploadFile(MP4_AUDIO_BYTES, "audio/mpeg", "song.mp3")
+
+    validated = run_async(validate_audio_upload(upload, max_size_bytes=1024))
+
+    assert validated.content_type == "audio/mpeg"
+    assert validated.size_bytes == len(MP4_AUDIO_BYTES)
 
 
 def test_accepts_flac_audio_content_type() -> None:
@@ -293,6 +304,7 @@ def test_generates_uuid_v4_and_asset_object_key() -> None:
 
     assert asset_uuid.version == 4
     assert build_object_key(response.asset_id) == f"assets/{response.asset_id}"
+    assert hasattr(response, "duration_seconds")
 
 
 def test_get_metadata_returns_stored_metadata() -> None:
@@ -309,6 +321,7 @@ def test_get_metadata_returns_stored_metadata() -> None:
 
     assert metadata_response.status_code == 200
     assert metadata_response.json()["assetType"] == "AUDIO"
+    assert "durationSeconds" in metadata_response.json()
     assert metadata_response.json()["exists"] is True
 
 

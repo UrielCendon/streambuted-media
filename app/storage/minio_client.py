@@ -25,6 +25,7 @@ class StoredAssetMetadata:
     owner_user_id: str
     content_type: str
     size_bytes: int
+    duration_seconds: float | None
     original_filename: str
     uploaded_at: str
 
@@ -118,6 +119,8 @@ class MinioStorage:
             "size-bytes": str(metadata.size_bytes),
             "uploaded-at": metadata.uploaded_at,
         }
+        if metadata.duration_seconds is not None:
+            object_metadata["duration-seconds"] = str(metadata.duration_seconds)
 
         try:
             self._client.put_object(
@@ -184,6 +187,7 @@ class MinioStorage:
                 stat.content_type or "application/octet-stream",
             ),
             size_bytes=int(normalized_metadata.get("size-bytes", stat.size or 0)),
+            duration_seconds=parse_optional_float(normalized_metadata.get("duration-seconds")),
             original_filename=normalized_metadata.get(
                 "original-filename",
                 "upload.bin",
@@ -249,3 +253,13 @@ def normalize_minio_metadata(metadata: dict[str, str]) -> dict[str, str]:
             normalized_key = normalized_key.removeprefix("x-amz-meta-")
         normalized[normalized_key] = value
     return normalized
+
+
+def parse_optional_float(value: str | None) -> float | None:
+    """Parse optional float metadata values stored in MinIO."""
+    if value is None or value == "":
+        return None
+    try:
+        return float(value)
+    except ValueError:
+        return None

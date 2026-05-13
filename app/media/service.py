@@ -1,8 +1,13 @@
 from datetime import UTC, datetime
+from io import BytesIO
 from typing import Any
 from uuid import UUID, uuid4
 
 from fastapi import UploadFile
+try:
+    from mutagen import File as MutagenFile
+except ImportError:  # pragma: no cover - production image installs mutagen.
+    MutagenFile = None
 
 from app.auth.models import AuthenticatedUser
 from app.config import Settings
@@ -53,11 +58,13 @@ class MediaService:
                 file,
                 self._settings.max_audio_size_bytes,
             )
+            duration_seconds = extract_audio_duration_seconds(upload.content)
         else:
             upload = await validate_image_upload(
                 file,
                 self._settings.max_image_size_bytes,
             )
+            duration_seconds = None
 
         asset_id = uuid4()
         uploaded_at = utc_now()
@@ -67,6 +74,7 @@ class MediaService:
             owner_user_id=owner.subject,
             content_type=upload.content_type,
             size_bytes=upload.size_bytes,
+            duration_seconds=duration_seconds,
             original_filename=upload.original_filename,
             uploaded_at=uploaded_at,
         )
@@ -81,6 +89,7 @@ class MediaService:
             assetType=asset_type,
             contentType=metadata.content_type,
             sizeBytes=metadata.size_bytes,
+            durationSeconds=metadata.duration_seconds,
         )
 
     def get_metadata(self, asset_id: UUID) -> AssetMetadataResponse:
@@ -99,6 +108,7 @@ class MediaService:
             ownerUserId=metadata.owner_user_id,
             contentType=metadata.content_type,
             sizeBytes=metadata.size_bytes,
+            durationSeconds=metadata.duration_seconds,
             originalFilename=metadata.original_filename,
             exists=True,
         )
@@ -141,6 +151,23 @@ def build_asset_ready_event(
         "ownerUserId": metadata.owner_user_id,
         "contentType": metadata.content_type,
         "sizeBytes": metadata.size_bytes,
+        "durationSeconds": metadata.duration_seconds,
         "originalFilename": metadata.original_filename,
         "occurredAt": occurred_at,
     }
+
+
+def extract_audio_duration_seconds(content: bytes) -> float | None:
+    """Return audio duration in seconds using the already validated upload bytes."""
+    if MutagenFile is None:
+        return None
+
+    try:
+        audio = MutagenFile(BytesIO(content))
+    except Exception:
+        return None
+
+    duration = getattr(getattr(audio, "info", None), "length", None)
+    if not isinstance(duration, (int, float)) or duration <= 0:
+        return None
+    return float(duration)

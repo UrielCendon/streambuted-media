@@ -26,6 +26,7 @@ class AssetUploadResponse(BaseModel):
     asset_type: AssetType = Field(..., alias="assetType")
     content_type: str = Field(..., alias="contentType")
     size_bytes: int = Field(..., alias="sizeBytes")
+    duration_seconds: float | None = Field(default=None, alias="durationSeconds")
 
     model_config = ConfigDict(populate_by_name=True, use_enum_values=True)
 
@@ -38,6 +39,7 @@ class AssetMetadataResponse(BaseModel):
     owner_user_id: str = Field(..., alias="ownerUserId")
     content_type: str = Field(..., alias="contentType")
     size_bytes: int = Field(..., alias="sizeBytes")
+    duration_seconds: float | None = Field(default=None, alias="durationSeconds")
     original_filename: str = Field(..., alias="originalFilename")
     exists: bool
 
