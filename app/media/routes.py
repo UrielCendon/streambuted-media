@@ -130,6 +130,10 @@ async def get_asset(
     media_service: MediaService = Depends(get_media_service),
 ) -> StreamingResponse:
     """Stream an asset from MinIO by asset id."""
+    metadata = media_service.get_metadata(asset_id)
+    if metadata.asset_type in {AssetType.AUDIO, AssetType.AUDIO.value}:
+        raise AppError(404, "AssetNotFound", "Asset not found.")
+
     stored_object = media_service.open_asset(asset_id)
     return StreamingResponse(
         stored_object.content,
