@@ -172,16 +172,18 @@ def seed_asset(
     owner_user_id: str = "37f6c3cb-d848-4678-b545-cd81f5d0f4ea",
     asset_type: AssetType = AssetType.AUDIO,
 ) -> None:
+    content_type = "audio/mpeg" if asset_type == AssetType.AUDIO else "image/png"
+    content = MP3_BYTES if asset_type == AssetType.AUDIO else PNG_BYTES
     storage.assets[str(asset_id)] = (
-        MP3_BYTES,
+        content,
         StoredAssetMetadata(
             asset_id=str(asset_id),
             asset_type=asset_type,
             owner_user_id=owner_user_id,
-            content_type="audio/mpeg",
-            size_bytes=len(MP3_BYTES),
-            duration_seconds=123.45,
-            original_filename="song.mp3",
+            content_type=content_type,
+            size_bytes=len(content),
+            duration_seconds=123.45 if asset_type == AssetType.AUDIO else None,
+            original_filename="song.mp3" if asset_type == AssetType.AUDIO else "cover.png",
             uploaded_at="2026-04-30T00:00:00Z",
         ),
     )
@@ -323,6 +325,30 @@ def test_get_metadata_returns_stored_metadata() -> None:
     assert metadata_response.json()["assetType"] == "AUDIO"
     assert "durationSeconds" in metadata_response.json()
     assert metadata_response.json()["exists"] is True
+
+
+def test_direct_audio_asset_download_is_blocked() -> None:
+    storage = FakeStorage()
+    asset_id = uuid4()
+    seed_asset(storage, asset_id, asset_type=AssetType.AUDIO)
+    client = build_client(UserRole.ARTIST, storage=storage)
+
+    response = client.get(f"/api/v1/media/assets/{asset_id}")
+
+    assert response.status_code == 404
+
+
+def test_direct_image_asset_download_remains_available() -> None:
+    storage = FakeStorage()
+    asset_id = uuid4()
+    seed_asset(storage, asset_id, asset_type=AssetType.TRACK_COVER)
+    client = build_client(UserRole.ARTIST, storage=storage)
+
+    response = client.get(f"/api/v1/media/assets/{asset_id}")
+
+    assert response.status_code == 200
+    assert response.content == PNG_BYTES
+    assert response.headers["content-type"].startswith("image/png")
 
 
 def test_missing_asset_returns_404() -> None:

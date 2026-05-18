@@ -35,7 +35,7 @@ class Settings(BaseSettings):
         default="http://identity-service:8081/api/v1/auth/.well-known/jwks.json",
         alias="JWT_JWKS_URL",
     )
-    jwt_audience: str | None = Field(default=None, alias="JWT_AUDIENCE")
+    jwt_audience: str | None = Field(default="streambuted-api", alias="JWT_AUDIENCE")
 
     rabbitmq_host: str = Field(default="rabbitmq", alias="RABBITMQ_HOST")
     rabbitmq_port: int = Field(default=5672, alias="RABBITMQ_PORT")
