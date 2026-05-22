@@ -9,6 +9,12 @@ from fastapi.responses import JSONResponse
 logger = logging.getLogger(__name__)
 
 
+def flatten_details(details: Any | None) -> dict[str, Any]:
+    if not isinstance(details, dict):
+        return {}
+    return details
+
+
 class AppError(Exception):
     """Controlled application error translated into a REST response."""
 
@@ -54,6 +60,7 @@ async def app_error_handler(_request: Request, exc: AppError) -> JSONResponse:
 
     payload: dict[str, Any] = {
         "error": exc.code,
+        **flatten_details(exc.details),
         "message": exc.message,
         "statusCode": exc.status_code,
         "timestamp": utc_timestamp(),

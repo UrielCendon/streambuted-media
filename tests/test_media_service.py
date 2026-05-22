@@ -278,6 +278,41 @@ def test_rejects_non_artist_audio_upload() -> None:
     assert response.status_code == 403
 
 
+def test_rejects_suspended_account_uploads() -> None:
+    class SuspendedJwtValidator:
+        def validate_authorization_header(
+            self,
+            authorization_header: str | None,
+        ) -> AuthenticatedUser:
+            raise AppError(
+                403,
+                "AccountBannedException",
+                "La cuenta se encuentra suspendida.",
+                {
+                    "code": "ACCOUNT_BANNED",
+                    "banType": "TEMPORARY",
+                    "remainingSeconds": 600,
+                },
+            )
+
+    app = create_app(
+        settings=build_settings(),
+        storage=FakeStorage(),
+        event_publisher=FakePublisher(),
+        jwt_validator=SuspendedJwtValidator(),
+    )
+    client = TestClient(app)
+
+    response = client.post(
+        "/api/v1/media/profile-image",
+        headers={"Authorization": "Bearer token"},
+        files={"file": ("profile.png", PNG_BYTES, "image/png")},
+    )
+
+    assert response.status_code == 403
+    assert response.json()["code"] == "ACCOUNT_BANNED"
+
+
 def test_accepts_profile_image_for_authenticated_listener() -> None:
     client = build_client(UserRole.LISTENER)
 
