@@ -10,6 +10,7 @@ class AssetType(str, Enum):
     AUDIO = "AUDIO"
     TRACK_COVER = "TRACK_COVER"
     ALBUM_COVER = "ALBUM_COVER"
+    PLAYLIST_COVER = "PLAYLIST_COVER"
 
 
 class HealthResponse(BaseModel):

@@ -326,6 +326,33 @@ def test_accepts_profile_image_for_authenticated_listener() -> None:
     assert response.json()["assetType"] == "PROFILE_IMAGE"
 
 
+def test_accepts_playlist_cover_for_authenticated_listener() -> None:
+    client = build_client(UserRole.LISTENER)
+
+    response = client.post(
+        "/api/v1/media/images",
+        headers={"Authorization": "Bearer token"},
+        data={"usage": "PLAYLIST_COVER"},
+        files={"file": ("playlist-cover.png", PNG_BYTES, "image/png")},
+    )
+
+    assert response.status_code == 201
+    assert response.json()["assetType"] == "PLAYLIST_COVER"
+
+
+def test_rejects_track_cover_for_listener() -> None:
+    client = build_client(UserRole.LISTENER)
+
+    response = client.post(
+        "/api/v1/media/images",
+        headers={"Authorization": "Bearer token"},
+        data={"usage": "TRACK_COVER"},
+        files={"file": ("track-cover.png", PNG_BYTES, "image/png")},
+    )
+
+    assert response.status_code == 403
+
+
 def test_generates_uuid_v4_and_asset_object_key() -> None:
     storage = FakeStorage()
     publisher = FakePublisher()

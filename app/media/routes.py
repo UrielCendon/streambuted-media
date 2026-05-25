@@ -87,23 +87,25 @@ async def upload_catalog_image(
     current_user: AuthenticatedUser = Depends(get_current_user),
     media_service: MediaService = Depends(get_media_service),
 ) -> AssetUploadResponse:
-    """Upload a track or album cover image for an authenticated artist."""
-    assert_artist_role(current_user)
+    """Upload a reusable image asset for catalog or playlist covers."""
     try:
         asset_type = AssetType(usage.strip().upper())
     except ValueError as exc:
         raise AppError(
             400,
             "ValidationError",
-            "usage must be TRACK_COVER or ALBUM_COVER.",
+            "usage must be TRACK_COVER, ALBUM_COVER or PLAYLIST_COVER.",
         ) from exc
 
-    if asset_type not in {AssetType.TRACK_COVER, AssetType.ALBUM_COVER}:
+    if asset_type not in {AssetType.TRACK_COVER, AssetType.ALBUM_COVER, AssetType.PLAYLIST_COVER}:
         raise AppError(
             400,
             "ValidationError",
-            "usage must be TRACK_COVER or ALBUM_COVER.",
+            "usage must be TRACK_COVER, ALBUM_COVER or PLAYLIST_COVER.",
         )
+
+    if asset_type in {AssetType.TRACK_COVER, AssetType.ALBUM_COVER}:
+        assert_artist_role(current_user)
 
     return await media_service.upload_asset(
         file=file,
