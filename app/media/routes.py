@@ -37,7 +37,7 @@ def assert_artist_role(user: AuthenticatedUser) -> None:
         raise AppError(
             403,
             "Forbidden",
-            "Only users with role ARTIST can upload this asset type.",
+            "Solo los artistas pueden subir este tipo de archivo.",
         )
 
 
@@ -94,14 +94,14 @@ async def upload_catalog_image(
         raise AppError(
             400,
             "ValidationError",
-            "usage must be TRACK_COVER, ALBUM_COVER or PLAYLIST_COVER.",
+            "usage debe ser TRACK_COVER, ALBUM_COVER o PLAYLIST_COVER.",
         ) from exc
 
     if asset_type not in {AssetType.TRACK_COVER, AssetType.ALBUM_COVER, AssetType.PLAYLIST_COVER}:
         raise AppError(
             400,
             "ValidationError",
-            "usage must be TRACK_COVER, ALBUM_COVER or PLAYLIST_COVER.",
+            "usage debe ser TRACK_COVER, ALBUM_COVER o PLAYLIST_COVER.",
         )
 
     if asset_type in {AssetType.TRACK_COVER, AssetType.ALBUM_COVER}:
@@ -134,7 +134,7 @@ async def get_asset(
     """Stream an asset from MinIO by asset id."""
     metadata = media_service.get_metadata(asset_id)
     if metadata.asset_type in {AssetType.AUDIO, AssetType.AUDIO.value}:
-        raise AppError(404, "AssetNotFound", "Asset not found.")
+        raise AppError(404, "AssetNotFound", "El archivo multimedia no existe o ya no esta disponible.")
 
     stored_object = media_service.open_asset(asset_id)
     return StreamingResponse(

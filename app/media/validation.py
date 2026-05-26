@@ -111,18 +111,18 @@ async def validate_upload(
         raise AppError(
             400,
             "UnsupportedMediaType",
-            f"Unsupported {kind} content type.",
+            f"El tipo de archivo {kind} no esta permitido.",
         )
 
     content = await read_limited_file(file, max_size_bytes)
     if not content:
-        raise AppError(400, "EmptyFile", "Uploaded file cannot be empty.")
+        raise AppError(400, "EmptyFile", "El archivo no puede estar vacio.")
 
     if not has_valid_magic_bytes(content, content_type):
         raise AppError(
             400,
             "InvalidFileContent",
-            "Uploaded file content does not match its content type.",
+            "El contenido del archivo no coincide con su tipo declarado.",
         )
 
     return ValidatedUpload(
@@ -158,7 +158,7 @@ async def read_limited_file(file: UploadFile, max_size_bytes: int) -> bytes:
             raise AppError(
                 413,
                 "FileTooLarge",
-                "Uploaded file exceeds the configured size limit.",
+                "El archivo supera el tamano maximo permitido.",
             )
         chunks.append(chunk)
 

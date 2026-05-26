@@ -41,7 +41,7 @@ class MediaAssetGrpcService(media_asset_pb2_grpc.MediaAssetServiceServicer):
         except ValueError:
             await context.abort(
                 grpc.StatusCode.INVALID_ARGUMENT,
-                "asset_id must be a valid UUID.",
+                "asset_id debe ser un UUID valido.",
             )
             raise RuntimeError("gRPC abort did not stop execution.")
 
@@ -54,14 +54,14 @@ class MediaAssetGrpcService(media_asset_pb2_grpc.MediaAssetServiceServicer):
             logger.exception("Unexpected error while reading asset metadata: %s", exc)
             await context.abort(
                 grpc.StatusCode.INTERNAL,
-                "Unable to read asset metadata.",
+                "No se pudieron leer los metadatos del archivo.",
             )
             raise RuntimeError("gRPC abort did not stop execution.")
 
         if metadata.owner_user_id != user.subject and user.role != UserRole.ADMIN:
             await context.abort(
                 grpc.StatusCode.PERMISSION_DENIED,
-                "The asset is not accessible for this user.",
+                "El archivo no es accesible para este usuario.",
             )
             raise RuntimeError("gRPC abort did not stop execution.")
 
@@ -87,19 +87,19 @@ class MediaAssetGrpcService(media_asset_pb2_grpc.MediaAssetServiceServicer):
                 logger.error("JWT validation failed for gRPC metadata: %s", exc.message)
             await context.abort(
                 grpc.StatusCode.UNAUTHENTICATED,
-                "Missing or invalid authorization token.",
+                "Falta el token de autorizacion o no es valido.",
             )
             raise RuntimeError("gRPC abort did not stop execution.")
 
     @staticmethod
     async def _abort_app_error(context, exc: AppError) -> None:
         if exc.status_code == 404:
-            await context.abort(grpc.StatusCode.NOT_FOUND, "Asset not found.")
+            await context.abort(grpc.StatusCode.NOT_FOUND, "El archivo multimedia no existe o ya no esta disponible.")
             return
         if exc.status_code == 503:
             await context.abort(
                 grpc.StatusCode.UNAVAILABLE,
-                "Media storage is unavailable.",
+                "El almacenamiento multimedia no esta disponible.",
             )
             return
 
@@ -112,7 +112,7 @@ class MediaAssetGrpcService(media_asset_pb2_grpc.MediaAssetServiceServicer):
         )
         await context.abort(
             grpc.StatusCode.INTERNAL,
-            "Unable to read asset metadata.",
+            "No se pudieron leer los metadatos del archivo.",
         )
 
 

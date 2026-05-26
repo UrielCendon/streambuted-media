@@ -46,7 +46,7 @@ class FakeJwtValidator:
         authorization_header: str | None,
     ) -> AuthenticatedUser:
         if authorization_header != "Bearer token":
-            raise AppError(401, "Unauthorized", "Missing or invalid Authorization header.")
+            raise AppError(401, "Unauthorized", "Falta el encabezado Authorization o no es valido.")
         return AuthenticatedUser(
             subject="37f6c3cb-d848-4678-b545-cd81f5d0f4ea",
             role=self._role,
@@ -58,7 +58,7 @@ class RejectingJwtValidator:
         self,
         authorization_header: str | None,
     ) -> AuthenticatedUser:
-        raise AppError(401, "Unauthorized", "Invalid JWT token.")
+        raise AppError(401, "Unauthorized", "El token JWT no es valido.")
 
 
 class FakeStorage:
@@ -82,13 +82,13 @@ class FakeStorage:
     def get_metadata(self, asset_id: UUID | str) -> StoredAssetMetadata:
         stored = self.assets.get(str(asset_id))
         if not stored:
-            raise AppError(404, "AssetNotFound", "Asset not found.")
+            raise AppError(404, "AssetNotFound", "El archivo multimedia no existe o ya no esta disponible.")
         return stored[1]
 
     def open_asset(self, asset_id: UUID | str) -> StoredObjectStream:
         stored = self.assets.get(str(asset_id))
         if not stored:
-            raise AppError(404, "AssetNotFound", "Asset not found.")
+            raise AppError(404, "AssetNotFound", "El archivo multimedia no existe o ya no esta disponible.")
 
         content, metadata = stored
         return StoredObjectStream(

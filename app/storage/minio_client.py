@@ -92,7 +92,7 @@ class MinioStorage:
             raise AppError(
                 503,
                 "StorageUnavailable",
-                "Media storage is unavailable.",
+                "El almacenamiento multimedia no esta disponible.",
             ) from exc
 
     def upload_asset(
@@ -136,7 +136,7 @@ class MinioStorage:
             raise AppError(
                 503,
                 "StorageUnavailable",
-                "Media storage is unavailable.",
+                "El almacenamiento multimedia no esta disponible.",
             ) from exc
 
     def get_metadata(self, asset_id: UUID | str) -> StoredAssetMetadata:
@@ -158,12 +158,12 @@ class MinioStorage:
             )
         except S3Error as exc:
             if exc.code in {"NoSuchKey", "NoSuchObject", "NotFound"}:
-                raise AppError(404, "AssetNotFound", "Asset not found.") from exc
+                raise AppError(404, "AssetNotFound", "El archivo multimedia no existe o ya no esta disponible.") from exc
             logger.error("Failed to stat MinIO object: %s", exc, exc_info=True)
             raise AppError(
                 503,
                 "StorageUnavailable",
-                "Media storage is unavailable.",
+                "El almacenamiento multimedia no esta disponible.",
             ) from exc
 
         normalized_metadata = normalize_minio_metadata(stat.metadata or {})
@@ -175,7 +175,7 @@ class MinioStorage:
             raise AppError(
                 500,
                 "InvalidStoredAsset",
-                "Stored asset metadata is invalid.",
+                "Los metadatos del archivo almacenado no son validos.",
             ) from exc
 
         return StoredAssetMetadata(
@@ -215,12 +215,12 @@ class MinioStorage:
             )
         except S3Error as exc:
             if exc.code in {"NoSuchKey", "NoSuchObject", "NotFound"}:
-                raise AppError(404, "AssetNotFound", "Asset not found.") from exc
+                raise AppError(404, "AssetNotFound", "El archivo multimedia no existe o ya no esta disponible.") from exc
             logger.error("Failed to read MinIO object: %s", exc, exc_info=True)
             raise AppError(
                 503,
                 "StorageUnavailable",
-                "Media storage is unavailable.",
+                "El almacenamiento multimedia no esta disponible.",
             ) from exc
 
         def iter_content() -> Iterator[bytes]:
