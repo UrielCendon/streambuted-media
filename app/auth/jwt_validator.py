@@ -15,6 +15,9 @@ RESOURCE_CHANGED_MESSAGE = (
     "El recurso original ha cambiado, vuelva a intentarlo en otro momento."
 )
 ACCOUNT_BANNED_MESSAGE = "La cuenta se encuentra suspendida."
+SESSION_UNAVAILABLE_MESSAGE = "Esta funcion no esta disponible en este momento. Intenta de nuevo mas tarde."
+SESSION_EXPIRED_MESSAGE = "Tu sesion expiro. Inicia sesion nuevamente."
+SESSION_INVALID_MESSAGE = "No se pudo validar tu sesion. Inicia sesion nuevamente."
 
 
 class JwtValidator:
@@ -82,15 +85,15 @@ class JwtValidator:
             header = jwt.get_unverified_header(token)
         except InvalidTokenError as exc:
             logger.info("Rejected malformed JWT header: %s", exc)
-            raise AppError(401, "Unauthorized", "El token JWT no es valido.") from exc
+            raise AppError(401, "Unauthorized", SESSION_INVALID_MESSAGE) from exc
 
         algorithm = header.get("alg")
         if algorithm != "RS256":
-            raise AppError(401, "Unauthorized", "El algoritmo del token JWT no esta permitido.")
+            raise AppError(401, "Unauthorized", SESSION_INVALID_MESSAGE)
 
         kid = header.get("kid")
         if not isinstance(kid, str) or not kid.strip():
-            raise AppError(401, "Unauthorized", "El token JWT no incluye identificador de llave.")
+            raise AppError(401, "Unauthorized", SESSION_INVALID_MESSAGE)
 
         signing_key = self._get_signing_key(kid)
         payload = self._decode_token(token, signing_key)
@@ -98,14 +101,14 @@ class JwtValidator:
         role = payload.get("role")
 
         if not isinstance(subject, str) or not subject.strip():
-            raise AppError(401, "Unauthorized", "El token JWT no incluye el identificador del usuario.")
+            raise AppError(401, "Unauthorized", SESSION_INVALID_MESSAGE)
         if not isinstance(role, str) or not role.strip():
-            raise AppError(401, "Unauthorized", "El token JWT no incluye el rol del usuario.")
+            raise AppError(401, "Unauthorized", SESSION_INVALID_MESSAGE)
 
         try:
             normalized_role = normalize_role(role)
         except ValueError as exc:
-            raise AppError(401, "Unauthorized", "El rol del token JWT no es valido.") from exc
+            raise AppError(401, "Unauthorized", SESSION_INVALID_MESSAGE) from exc
 
         self._validate_account_state(token)
 
@@ -131,11 +134,11 @@ class JwtValidator:
             raise AppError(
                 401,
                 "Unauthorized",
-                "El token JWT es invalido o expiro.",
+                SESSION_EXPIRED_MESSAGE,
             ) from exc
 
         if not isinstance(decoded, dict):
-            raise AppError(401, "Unauthorized", "El contenido del token JWT no es valido.")
+            raise AppError(401, "Unauthorized", SESSION_INVALID_MESSAGE)
         return decoded
 
     def _get_signing_key(self, kid: str) -> Any:
@@ -153,7 +156,7 @@ class JwtValidator:
             return PyJWK.from_dict(key_data).key
         except (InvalidTokenError, PyJWKError, ValueError, TypeError) as exc:
             logger.error("Failed to build public key from JWKS: %s", exc)
-            raise AppError(401, "Unauthorized", "La llave de firma del token JWT no es valida.") from exc
+            raise AppError(401, "Unauthorized", SESSION_INVALID_MESSAGE) from exc
 
     def _get_cached_jwks(self) -> dict[str, Any]:
         now = time.monotonic()
@@ -171,11 +174,11 @@ class JwtValidator:
             raise AppError(
                 503,
                 "ServiceUnavailable",
-                "La validacion de sesion no esta disponible temporalmente.",
+                SESSION_UNAVAILABLE_MESSAGE,
             ) from exc
 
         if not isinstance(jwks, dict) or not isinstance(jwks.get("keys"), list):
-            raise AppError(401, "Unauthorized", "El documento JWKS no es valido.")
+            raise AppError(401, "Unauthorized", SESSION_INVALID_MESSAGE)
 
         self._jwks = jwks
         self._jwks_loaded_at = time.monotonic()
@@ -193,7 +196,7 @@ class JwtValidator:
             raise AppError(
                 503,
                 "ServiceUnavailable",
-                "La validacion de sesion no esta disponible temporalmente.",
+                SESSION_UNAVAILABLE_MESSAGE,
             ) from exc
 
         payload = self._parse_identity_payload(response)
@@ -209,12 +212,12 @@ class JwtValidator:
             )
 
         if response.status_code == 401:
-            raise AppError(401, "Unauthorized", "El token JWT es invalido o expiro.")
+            raise AppError(401, "Unauthorized", SESSION_EXPIRED_MESSAGE)
 
         raise AppError(
             503,
             "ServiceUnavailable",
-            "La validacion de sesion no esta disponible temporalmente.",
+            SESSION_UNAVAILABLE_MESSAGE,
         )
 
     @staticmethod
@@ -246,7 +249,7 @@ class JwtValidator:
             raise AppError(
                 401,
                 "Unauthorized",
-                "Falta el encabezado Authorization o no es valido.",
+                SESSION_EXPIRED_MESSAGE,
             )
 
         parts = authorization_header.strip().split()
@@ -254,7 +257,7 @@ class JwtValidator:
             raise AppError(
                 401,
                 "Unauthorized",
-                "Falta el encabezado Authorization o no es valido.",
+                SESSION_EXPIRED_MESSAGE,
             )
 
         return parts[1]
