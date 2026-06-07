@@ -17,6 +17,7 @@ from app.errors import (
 from app.events.publisher import AssetEventPublisher, build_event_publisher
 from app.media.routes import router as media_router
 from app.media.service import MediaService
+from app.openapi import configure_openapi, register_swagger_docs
 from app.storage.minio_client import MinioStorage
 
 logging.basicConfig(
@@ -58,8 +59,34 @@ def create_app(
 
     app = FastAPI(
         title="StreamButed Media Service",
+        description=(
+            "Carga y entrega assets multimedia de StreamButed. "
+            "Expone uploads autenticados para imagenes/audio y lectura publica de assets no-audio."
+        ),
         version="1.0.0",
+        docs_url=None,
+        redoc_url=None,
+        openapi_url="/api/v1/media/openapi.json",
         lifespan=lifespan,
+    )
+    register_swagger_docs(
+        app,
+        service_name="StreamButed Media Service",
+        docs_url="/api/v1/media/docs",
+        openapi_url="/api/v1/media/openapi.json",
+    )
+    configure_openapi(
+        app,
+        title="StreamButed Media Service",
+        version="1.0.0",
+        description=(
+            "Carga y entrega assets multimedia de StreamButed. "
+            "Usa MinIO como almacenamiento y JWT emitidos por identity-service para operaciones privadas."
+        ),
+        public_paths={
+            "/api/v1/media/assets/{asset_id}",
+            "/api/v1/media/assets/{asset_id}/metadata",
+        },
     )
     app.add_middleware(
         CORSMiddleware,
